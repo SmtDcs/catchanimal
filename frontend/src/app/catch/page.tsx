@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { GlassCard } from "../../components/GlassCard";
 import { AnimatedButton } from "../../components/AnimatedButton";
 import { Camera, X, Target } from "lucide-react";
@@ -60,15 +60,22 @@ export default function CatchPage() {
   // Start live camera
   const startCamera = async () => {
     try {
+      // Minimal constraints — geniş uyumluluk için
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
       });
 
       streamRef.current = stream;
+
+      // Video elementi her zaman DOM'da (CSS ile gizleniyor),
+      // bu yüzden ref her an geçerli
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        // Mobilde autoPlay her zaman çalışmaz, explicit play() gerekli
+        await videoRef.current.play();
+      }
+
       setIsCameraOn(true);
       setDetectionResult(null);
       setCapturedPhoto(null);
@@ -78,12 +85,6 @@ export default function CatchPage() {
       console.error(err);
     }
   };
-
-  // Stream'i video elementine state güncellendikten sonra ata
-  useEffect(() => {
-    if (!isCameraOn || !videoRef.current || !streamRef.current) return;
-    videoRef.current.srcObject = streamRef.current;
-  }, [isCameraOn]);
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -289,24 +290,22 @@ export default function CatchPage() {
       <GlassCard className="p-6">
         {/* Camera Area */}
         <div className="relative bg-black rounded-2xl overflow-hidden aspect-video flex items-center justify-center mb-6 border border-white/10">
-          {!isCameraOn ? (
-            <div className="text-center text-gray-400">
+          {/* Video her zaman DOM'da, kapalıyken gizle — ref her an geçerli olsun diye */}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`absolute inset-0 w-full h-full object-cover ${!isCameraOn ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+          />
+          <canvas ref={canvasRef} className="hidden" />
+
+          {!isCameraOn && (
+            <div className="text-center text-gray-400 z-10">
               <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
               <p>Kamera kapalı</p>
               <p className="text-xs mt-1">Gerçek zamanlı AI tespiti için kamerayı aç</p>
             </div>
-          ) : (
-            <>
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-              {/* Hidden canvas for snapshot */}
-              <canvas ref={canvasRef} className="hidden" />
-            </>
           )}
 
           {/* Detection overlay */}
