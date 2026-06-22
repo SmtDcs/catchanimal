@@ -2,12 +2,12 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { CameraView as ExpoCamera, useCameraPermissions } from "expo-camera";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { detectAnimal, preloadModel } from "../lib/detector";
+import { detectAnimal, preloadModel, isModelAvailable } from "../lib/detector";
 import { generateAnimal, getSpeciesLabel, getSpeciesEmoji, type AnimalSpecies } from "../lib/animals";
 import { useStore, type Animal } from "../lib/store";
 import { CatchGame } from "./CatchGame";
 
-type Phase = "loading-model" | "idle" | "scanning" | "game" | "found" | "not-found";
+type Phase = "loading-model" | "idle" | "scanning" | "game" | "found" | "not-found" | "model-error";
 
 interface CameraViewProps {
   onCatch: (animal: Animal) => void;
@@ -25,7 +25,12 @@ export function CameraView({ onCatch, onClose }: CameraViewProps) {
   const updatePlayer = useStore((s) => s.updatePlayer);
 
   useEffect(() => {
-    preloadModel().then(() => setPhase("idle")).catch(() => setPhase("idle"));
+    const timer = setTimeout(() => {
+      if (phase === "loading-model") {
+        setPhase("model-error"); // 10sn sonra hala yükleniyorsa hata göster
+      }
+    }, 10000);
+    preloadModel().then(() => { clearTimeout(timer); if (phase === "loading-model") setPhase("idle"); }).catch(() => { clearTimeout(timer); if (phase === "loading-model") setPhase("model-error"); });
   }, []);
 
   const handleCapture = useCallback(async () => {
@@ -111,6 +116,22 @@ export function CameraView({ onCatch, onClose }: CameraViewProps) {
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color="#E8A87C" />
             <Text className="font-body text-white mt-3">AI Modeli yükleniyor...</Text>
+            <Text className="font-body text-white/60 text-xs mt-1">İnternetten indiriliyor, ilk seferde 10-30sn sürebilir</Text>
+          </View>
+        )}
+
+        {/* Model error - fallback to simulated detection */}
+        {phase === "model-error" && (
+          <View className="flex-1 items-center justify-center">
+            <View className="bg-card-bg rounded-3xl p-6 mx-8 items-center">
+              <Ionicons name="warning-outline" size={48} color="#FF9800" />
+              <Text className="font-body text-text-secondary text-center mt-3">
+                AI modeli yüklenemedi. Simülasyon modunda devam ediliyor.
+              </Text>
+              <TouchableOpacity onPress={() => { setPhase("idle"); }} className="bg-primary px-6 py-2 rounded-full mt-4">
+                <Text className="font-display text-white text-sm">Devam Et</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 

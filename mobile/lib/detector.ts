@@ -1,7 +1,3 @@
-// @tensorflow/tfjs-react-native MUST be imported first to register
-// the React Native platform (custom fetch, Buffer, WebGL backend, etc.)
-// before any other TF.js code runs.
-import "@tensorflow/tfjs-react-native";
 import * as tf from "@tensorflow/tfjs";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import * as jpeg from "jpeg-js";
@@ -19,30 +15,44 @@ const ANIMAL_CLASSES: Record<string, AnimalSpecies> = {
   zebra: "zebra", giraffe: "giraffe",
 };
 
+// React Native'de fetch global'de var ama TF.js bazen window'dan arar.
+// Bunu güvence altına alalım.
+if (typeof globalThis !== "undefined" && !globalThis.fetch) {
+  globalThis.fetch = fetch as any;
+}
+
 let model: cocoSsd.ObjectDetection | null = null;
 let modelLoading = false;
+let modelFailed = false;
 
 async function getModel(): Promise<cocoSsd.ObjectDetection> {
   if (model) return model;
+  if (modelFailed) throw new Error("Model previously failed to load");
   if (modelLoading) {
     while (modelLoading) await new Promise((r) => setTimeout(r, 200));
-    return model!;
+    if (model) return model;
+    throw new Error("Model load failed");
   }
 
   modelLoading = true;
   try {
     await tf.ready();
+    // CPU backend kullanalım (WebGL Expo Go'da sorun çıkarıyor)
+    await tf.setBackend("cpu");
 
-    // WebGL dene, olmazsa CPU
-    if (tf.getBackend() !== "webgl") {
-      await tf.setBackend("webgl").catch(() => tf.setBackend("cpu"));
-    }
+    // Model yükleme timeout (30sn)
+    model = await Promise.race([
+      cocoSsd.load({ base: "mobilenet_v2" }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Model load timeout")), 30000)
+      ),
+    ]);
 
-    model = await cocoSsd.load({ base: "mobilenet_v2" });
     return model;
   } catch (err) {
     console.error("Model load error:", err);
     modelLoading = false;
+    modelFailed = true;
     throw err;
   } finally {
     modelLoading = false;
@@ -51,9 +61,8 @@ async function getModel(): Promise<cocoSsd.ObjectDetection> {
 
 function base64ToBytes(base64: string): Uint8Array {
   const binaryStr = atob(base64);
-  const len = binaryStr.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) bytes[i] = binaryStr.charCodeAt(i);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
   return bytes;
 }
 
@@ -64,7 +73,6 @@ async function imageToTensorAsync(uri: string) {
       encoding: FileSystem.EncodingType.Base64,
     });
   } catch {
-    // Expo Go bazen dosya yolunu beklemez, file:// protocol'den oku
     base64 = await FileSystem.readAsStringAsync(uri.replace("file://", ""), {
       encoding: FileSystem.EncodingType.Base64,
     });
@@ -73,7 +81,6 @@ async function imageToTensorAsync(uri: string) {
   const rawImageData = jpeg.decode(base64ToBytes(base64));
   const { width, height, data } = rawImageData;
 
-  // RGBA -> RGB
   const tensor = tf.tensor3d(data, [height, width, 4]);
   const rgb = tf.slice(tensor, [0, 0, 0], [height, width, 3]);
   tensor.dispose();
@@ -106,4 +113,8 @@ export async function detectAnimal(photoUri: string): Promise<DetectionResult | 
 
 export async function preloadModel(): Promise<void> {
   await getModel().catch(() => {});
+}
+
+export function isModelAvailable(): boolean {
+  return model !== null;
 }
