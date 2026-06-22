@@ -1,3 +1,7 @@
+// @tensorflow/tfjs-react-native MUST be imported first to register
+// the React Native platform (custom fetch, Buffer, WebGL backend, etc.)
+// before any other TF.js code runs.
+import "@tensorflow/tfjs-react-native";
 import * as tf from "@tensorflow/tfjs";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import * as jpeg from "jpeg-js";
