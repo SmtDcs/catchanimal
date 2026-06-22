@@ -1,42 +1,65 @@
 # CatchCat • Monad
 
-Kameranı aç → AI tespit et → Minigame ile yakala → Fotoğraflı NFT kart olarak sahiplen.
+Kameranı aç → AI ile tespit et → Minigame ile yakala → Fotoğraflı NFT olarak sahiplen.
 
-Kediler + Köpekler. Sadece canlı kamera. Komik isimler. Harita ile keşfet.
+**Kediler + Köpekler • Sadece canlı kamera • Komik isimler • Vahşi spawn'lar**
 
-**Şu an:** Aşama 1 (Temel altyapı + test mint)
+Şu anda tamamen client-side demo + gerçeğe yakın AI + interaktif minigame.
 
-## Hızlı Başlangıç
+## Mevcut Durum
+- ✅ Canlı kamera + gerçek TensorFlow.js (COCO-SSD) ile kedi/köpek tespiti
+- ✅ Sürükle-bırak mama fırlatma minigame
+- ✅ Yakalananlar koleksiyonda (localStorage demo)
+- ✅ Keşfet / Wild spawn'lar
+- 🔜 Gerçek mint (Monad testnet'te CatNFT kontratı + IPFS)
+
+## Geliştirme Akışı (Git + Vercel)
+
+Her değişiklikten sonra:
 
 ```bash
-# 1. Bağımlılıklar (root + frontend)
-npm install
-cd frontend && npm install
+git add .
+git commit -m "feat: ..."
+git push
+```
 
-# 2. Monad Testnet'e deploy (hardhat)
-npx hardhat run scripts/deploy.ts --network monadTestnet
+Vercel otomatik build yapacak ve sana yeni link verecek. Telefonunda o linkle test et.
 
-# 3. Frontend
+## Vercel'de Görüntüleme
+
+- Repo GitHub'a pushlandıktan sonra Vercel'den import et
+- **Root Directory** = `frontend`
+- Deploy olunca public HTTPS link alırsın (kamera için ideal)
+
+## Yerel Geliştirme
+
+```bash
 cd frontend
 npm run dev
 ```
 
-Cüzdanını Monad Testnet'e ekle:
+## Klasör Yapısı
+
+```
+catchcat-monad/
+├── contracts/          # Hardhat (CatNFT + diğerleri)
+├── frontend/           # Next.js uygulaması (burası Vercel'e deploy)
+│   └── src/
+├── hardhat.config.ts
+└── scripts/
+```
+
+## Telefon Testi
+
+Vercel linkini telefon tarayıcısında aç → Kamera izni ver → Oyun oyna.
+
+## Monad Testnet
+
+Cüzdan ekle:
 - RPC: https://testnet-rpc.monad.xyz
 - Chain ID: 10143
 - Faucet: https://faucet.monad.xyz
 
-## Mevcut Durum (Aşama 1)
-- ✅ Monad Testnet entegrasyonu
-- ✅ Wallet connect
-- ✅ Basit test mint (dummy)
-- 🔜 Aşama 2: Gerçek AI + canlı kamera
+---
 
-Proje aşama aşama ilerliyor. Her aşama bittiğinde bir sonraki için devam.
-
-## Klasör Yapısı
-- `contracts/` — CatNFT.sol (ve ileride diğerleri)
-- `frontend/` — Next.js + wagmi
-- `scripts/deploy.ts`
-
-Daha fazlası için plan dosyasını veya geliştiriciye sor.
+Her şeyi düzenli push'layıp Vercel'de görelim. Değişiklikleri küçük küçük yap, güzel commit mesajları yaz. Hazır mısın? Bir sonraki özelliği mi koyalım yoksa repo'yu mu oluşturalım?
