@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "CatchCat",
+    "slug": "catchcat",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "catchcat",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#F5E6D3"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "xyz.catchcat.app"
+    },
+    "android": {
+      "package": "xyz.catchcat.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#F5E6D3"
+      }
+    },
+    "plugins": ["expo-router"]
+  }
+}
