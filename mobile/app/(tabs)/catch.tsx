@@ -1,11 +1,11 @@
 import { useEffect } from "react";
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView } from "../../components/CameraView";
 import { useStore, type Animal } from "../../lib/store";
-import { getSpeciesEmoji, getSpeciesLabel } from "../../lib/animals";
+import { getSpeciesEmoji, getSpeciesLabel, generateAnimal, ANIMAL_SPECIES } from "../../lib/animals";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { preloadModel } from "../../lib/detector";
@@ -14,6 +14,7 @@ const RARITY_LABELS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
 
 export default function CatchScreen() {
   const player = useStore((s) => s.player);
+  const addAnimal = useStore((s) => s.addAnimal);
   const [showCamera, setShowCamera] = useState(false);
   const [lastCatch, setLastCatch] = useState<Animal | null>(null);
 
@@ -22,7 +23,14 @@ export default function CatchScreen() {
 
   const handleCatch = (animal: Animal) => {
     setLastCatch(animal);
-    // Kamera açık kalsın, kullanıcı devam edebilsin
+  };
+
+  // DEBUG: test için rastgele hayvan ekle
+  const handleTestCatch = () => {
+    const species = ANIMAL_SPECIES[Math.floor(Math.random() * ANIMAL_SPECIES.length)];
+    const animal = generateAnimal(species, "");
+    addAnimal(animal);
+    setLastCatch(animal);
   };
 
   if (showCamera) {
@@ -104,9 +112,14 @@ export default function CatchScreen() {
             </Text>
           </View>
         </View>
-        <Text className="font-body text-xs text-text-muted">
-          {player.catches} yakalama
-        </Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="font-body text-xs text-text-muted">
+            {player.catches} yakalama
+          </Text>
+          <TouchableOpacity onPress={handleTestCatch} className="bg-wood-light px-3 py-1 rounded-full">
+            <Text className="font-body text-xs text-text-muted">🧪 Test</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );

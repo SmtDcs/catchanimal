@@ -10,16 +10,9 @@ export interface DetectionResult {
 }
 
 const ANIMAL_CLASSES: Record<string, AnimalSpecies> = {
-  cat: "cat",
-  dog: "dog",
-  bird: "bird",
-  horse: "horse",
-  sheep: "sheep",
-  cow: "cow",
-  elephant: "elephant",
-  bear: "bear",
-  zebra: "zebra",
-  giraffe: "giraffe",
+  cat: "cat", dog: "dog", bird: "bird", horse: "horse",
+  sheep: "sheep", cow: "cow", elephant: "elephant", bear: "bear",
+  zebra: "zebra", giraffe: "giraffe",
 };
 
 let model: cocoSsd.ObjectDetection | null = null;
@@ -35,56 +28,52 @@ async function getModel(): Promise<cocoSsd.ObjectDetection> {
   modelLoading = true;
   try {
     await tf.ready();
-    console.log("TF.js backend:", tf.getBackend());
 
+    // WebGL dene, olmazsa CPU
     if (tf.getBackend() !== "webgl") {
-      try {
-        await tf.setBackend("webgl");
-      } catch {
-        console.warn("WebGL not available, using CPU");
-        await tf.setBackend("cpu");
-      }
+      await tf.setBackend("webgl").catch(() => tf.setBackend("cpu"));
     }
 
     model = await cocoSsd.load({ base: "mobilenet_v2" });
     return model;
+  } catch (err) {
+    console.error("Model load error:", err);
+    modelLoading = false;
+    throw err;
   } finally {
     modelLoading = false;
   }
 }
 
-/**
- * Base64 string'i Uint8Array'e çevir (Hermes/RN uyumlu)
- */
 function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
+  const binaryStr = atob(base64);
+  const len = binaryStr.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binaryStr.charCodeAt(i);
   return bytes;
 }
 
-async function imageToTensorAsync(uri: string): Promise<{
-  tensor: tf.Tensor3D;
-  width: number;
-  height: number;
-}> {
-  const base64 = await FileSystem.readAsStringAsync(uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+async function imageToTensorAsync(uri: string) {
+  let base64: string;
+  try {
+    base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+  } catch {
+    // Expo Go bazen dosya yolunu beklemez, file:// protocol'den oku
+    base64 = await FileSystem.readAsStringAsync(uri.replace("file://", ""), {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+  }
 
   const rawImageData = jpeg.decode(base64ToBytes(base64));
-
   const { width, height, data } = rawImageData;
 
-  // data is Uint8Array in RGBA format [height, width, 4]
+  // RGBA -> RGB
   const tensor = tf.tensor3d(data, [height, width, 4]);
-
-  // COCO-SSD expects RGB (3 channels), slice first 3 channels
   const rgb = tf.slice(tensor, [0, 0, 0], [height, width, 3]);
-
   tensor.dispose();
+
   return { tensor: rgb, width, height };
 }
 
@@ -99,7 +88,6 @@ export async function detectAnimal(photoUri: string): Promise<DetectionResult | 
     for (const pred of predictions) {
       const cls = pred.class.toLowerCase();
       const species = ANIMAL_CLASSES[cls];
-
       if (species && pred.score >= 0.45) {
         return { species, confidence: pred.score };
       }
@@ -113,5 +101,5 @@ export async function detectAnimal(photoUri: string): Promise<DetectionResult | 
 }
 
 export async function preloadModel(): Promise<void> {
-  await getModel();
+  await getModel().catch(() => {});
 }
