@@ -13,6 +13,12 @@ deployments/
 frontend/.next/
 frontend/out/
 frontend/.vercel/
+frontend/tsconfig.tsbuildinfo
+
+# Build artifacts
+artifacts/
+cache/
+typechain-types/
 
 # Build outputs
 dist/
