@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { GlassCard } from "../../components/GlassCard";
 import { AnimatedButton } from "../../components/AnimatedButton";
 import { Camera, X, Target } from "lucide-react";
@@ -68,10 +68,6 @@ export default function CatchPage() {
         },
       });
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-
       streamRef.current = stream;
       setIsCameraOn(true);
       setDetectionResult(null);
@@ -82,6 +78,12 @@ export default function CatchPage() {
       console.error(err);
     }
   };
+
+  // Stream'i video elementine state güncellendikten sonra ata
+  useEffect(() => {
+    if (!isCameraOn || !videoRef.current || !streamRef.current) return;
+    videoRef.current.srcObject = streamRef.current;
+  }, [isCameraOn]);
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -117,9 +119,11 @@ export default function CatchPage() {
     if (!video || !isCameraOn) return;
 
     setIsDetecting(true);
+    setIsLoadingModel(true);
 
     try {
       const model = await loadModel();
+      setIsLoadingModel(false);
 
       // Run detection on current video frame
       const predictions = await model.detect(video);
@@ -167,6 +171,7 @@ export default function CatchPage() {
       alert("AI modeli yüklenirken bir sorun oluştu. Tarayıcını yenile veya farklı bir cihaz dene.");
     } finally {
       setIsDetecting(false);
+      setIsLoadingModel(false);
     }
   };
 
@@ -345,7 +350,7 @@ export default function CatchPage() {
                   disabled={isDetecting || isLoadingModel}
                   className="flex items-center gap-2"
                 >
-                  {isDetecting ? "AI Tespit Ediyor..." : "AI ile Tespit Et"}
+                  {isLoadingModel ? "AI Modeli Yükleniyor... (birkaç sn)" : isDetecting ? "AI Tespit Ediyor..." : "AI ile Tespit Et"}
                 </AnimatedButton>
               )}
 

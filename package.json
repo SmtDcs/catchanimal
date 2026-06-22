@@ -1,7 +1,7 @@
 {
-  "name": "refaktor-sc",
+  "name": "catchcat-monad",
   "version": "0.1.0",
-  "description": "Refaktör — Web3 invoice factoring smart contracts (Monad)",
+  "description": "CatchCat — Camera AI Catcher with NFT minting on Monad",
   "private": true,
   "scripts": {
     "compile": "hardhat compile",
