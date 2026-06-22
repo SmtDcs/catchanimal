@@ -1,4 +1,4 @@
-import { View, Text } from "react-native";
+import { View, Text, useEffect } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,6 +7,7 @@ import { useStore, type Animal } from "../../lib/store";
 import { getSpeciesEmoji, getSpeciesLabel } from "../../lib/animals";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
+import { preloadModel } from "../../lib/detector";
 
 const RARITY_LABELS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
 
@@ -14,6 +15,9 @@ export default function CatchScreen() {
   const player = useStore((s) => s.player);
   const [showCamera, setShowCamera] = useState(false);
   const [lastCatch, setLastCatch] = useState<Animal | null>(null);
+
+  // AI modelini önceden yükle (kamera açıldığında hazır olsun)
+  useEffect(() => { preloadModel(); }, []);
 
   const handleCatch = (animal: Animal) => {
     setLastCatch(animal);

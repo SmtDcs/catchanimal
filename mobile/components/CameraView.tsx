@@ -1,12 +1,12 @@
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { CameraView as ExpoCamera, useCameraPermissions } from "expo-camera";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { detectAnimal } from "../lib/detector";
+import { detectAnimal, preloadModel } from "../lib/detector";
 import { generateAnimal, getSpeciesLabel, getSpeciesEmoji, type AnimalSpecies } from "../lib/animals";
 import { useStore, type Animal } from "../lib/store";
 
-type Phase = "idle" | "scanning" | "found" | "not-found";
+type Phase = "loading-model" | "idle" | "scanning" | "found" | "not-found";
 
 interface CameraViewProps {
   onCatch: (animal: Animal) => void;
@@ -16,9 +16,14 @@ interface CameraViewProps {
 export function CameraView({ onCatch, onClose }: CameraViewProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<ExpoCamera>(null);
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [phase, setPhase] = useState<Phase>("loading-model");
   const [result, setResult] = useState<{ species: AnimalSpecies; confidence: number } | null>(null);
   const addAnimal = useStore((s) => s.addAnimal);
+
+  // Modeli önceden yükle
+  useEffect(() => {
+    preloadModel().then(() => setPhase("idle")).catch(() => setPhase("idle"));
+  }, []);
 
   const handleCapture = useCallback(async () => {
     if (!cameraRef.current || phase !== "idle") return;
@@ -100,6 +105,15 @@ export function CameraView({ onCatch, onClose }: CameraViewProps) {
           <Text className="font-display text-white text-lg">Yakala</Text>
           <View className="w-10" />
         </View>
+
+        {/* Model loading */}
+        {phase === "loading-model" && (
+          <View className="flex-1 items-center justify-center bg-black/30">
+            <ActivityIndicator size="large" color="#E8A87C" />
+            <Text className="font-body text-white mt-3">AI Modeli yükleniyor...</Text>
+            <Text className="font-body text-white/60 text-xs mt-1">İlk seferde biraz sürebilir</Text>
+          </View>
+        )}
 
         {/* Scanning overlay */}
         {phase === "scanning" && (
