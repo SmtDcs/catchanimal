@@ -15,19 +15,28 @@ const ANIMAL_CLASSES: Record<string, AnimalSpecies> = {
   zebra: "zebra", giraffe: "giraffe",
 };
 
-// React Native'de fetch global'de var ama TF.js bazen window'dan arar.
-// Bunu güvence altına alalım.
-if (typeof globalThis !== "undefined" && !globalThis.fetch) {
-  globalThis.fetch = fetch as any;
-}
-
 let model: cocoSsd.ObjectDetection | null = null;
 let modelLoading = false;
-let modelFailed = false;
+
+/**
+ * TF.js'i React Native'de çalıştırmak için gerekli platform kurulumu.
+ * - fetch flag'i register edilmezse tf.io.http model.json'u indiremez.
+ * - CPU backend kullanıyoruz (WebGL Expo Go'da kararlı değil).
+ */
+async function setupTF() {
+  // Register 'fetch' flag so tf.io.http can download model files
+  try {
+    tf.env().registerFlag("fetch", () => globalThis.fetch);
+  } catch {
+    // Already registered
+  }
+
+  await tf.ready();
+  await tf.setBackend("cpu");
+}
 
 async function getModel(): Promise<cocoSsd.ObjectDetection> {
   if (model) return model;
-  if (modelFailed) throw new Error("Model previously failed to load");
   if (modelLoading) {
     while (modelLoading) await new Promise((r) => setTimeout(r, 200));
     if (model) return model;
@@ -36,13 +45,11 @@ async function getModel(): Promise<cocoSsd.ObjectDetection> {
 
   modelLoading = true;
   try {
-    await tf.ready();
-    // CPU backend kullanalım (WebGL Expo Go'da sorun çıkarıyor)
-    await tf.setBackend("cpu");
+    await setupTF();
 
-    // Model yükleme timeout (30sn)
+    // Model yükleme 30sn timeout
     model = await Promise.race([
-      cocoSsd.load({ base: "mobilenet_v2" }),
+      cocoSsd.load({ base: "lite_mobilenet_v2" }),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Model load timeout")), 30000)
       ),
@@ -52,7 +59,6 @@ async function getModel(): Promise<cocoSsd.ObjectDetection> {
   } catch (err) {
     console.error("Model load error:", err);
     modelLoading = false;
-    modelFailed = true;
     throw err;
   } finally {
     modelLoading = false;
