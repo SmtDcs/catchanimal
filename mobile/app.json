@@ -8,7 +8,8 @@
     "scheme": "catchcat",
     "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#F5E6D3"
+      "backgroundColor": "#F5E6D3",
+      "resizeMode": "contain"
     },
     "ios": {
       "supportsTablet": false,
