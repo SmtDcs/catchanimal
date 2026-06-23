@@ -30,6 +30,15 @@
       "expo-asset",
       "expo-font",
       [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F5E6D3",
+          "resizeMode": "contain",
+          "image": "./assets/splash.png",
+          "imageWidth": 200
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "CatchCat'in hayvanları tespit etmesi için kamerana erişmesi gerekiyor."
